@@ -16,13 +16,13 @@ def build_examples_array(results, runs_path, results_path_info, num_chunks)
 	examples = []
 	results['collections'].each do |template|
 		rel_path = template['rel_output_path'] + "/" + template['collection_name']
-		abs_path = runs_path + "/" + results_path_info.dirname.to_s + "/" + rel_path
+		abs_path = results_path_info.dirname.to_s + "/" + rel_path
 		template['examples'].each do |example|
 
 			examples << {
-				rel_path: rel_path,
-				abs_path: abs_path,
-				filename: example.fetch('full_name')
+				"rel_path" => rel_path,
+				"abs_path" => abs_path,
+				"filename" => example.fetch('full_name')
 			}
 		end
 	end
@@ -57,11 +57,12 @@ example_chunks.each_with_index do |examples, index|
 	fork { 
 		examples.each do |example|
 			t = Time.now
-			command = "-d -F -D #{example[:abs_path]} -o #{example[:filename]}  #{example[:abs_path]}/#{example[:filename]}.html"
+			delay_time = example['abs_path'][/wholesale/] ? 1 : 0.05
+			command = "--delay=#{delay_time} -F -D #{example['abs_path']} -o #{example['filename']}  #{example['abs_path']}/#{example['filename']}.html"
 			`webkit2png #{command}`
 			time = ((Time.now - t)*1000).round
 			num_examples += 1
-			puts "example #{num_examples} worker=#{index} time=#{time} example=#{example[:filename]}"
+			puts "example #{num_examples} worker=#{index} time=#{time} example=#{example['filename']}"
 		end
 	}
 end
@@ -69,6 +70,11 @@ end
 p Process.waitall
 puts "done"
 
-
-
-
+pngs = Dir.glob(results_path_info.dirname.to_s+"/**/*.png").select {|file| !file[/asset/]}
+pngs.each do |png|
+	begin
+		FileUtils.mv png, png.sub('-full.png', '.png')
+	rescue
+		puts "Error [RASTERIZER]: #{png}"
+	end
+end

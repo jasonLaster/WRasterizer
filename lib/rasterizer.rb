@@ -1,4 +1,5 @@
+require 'rubygems'
 require 'optparse'
 require 'json'
 require 'pathname'
-require 'pry'
+require 'fileutils'
